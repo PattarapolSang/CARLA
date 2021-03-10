@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:mega",
+    "sketch": "..\\Test_Mixer\\Test_Mixer.ino",
+    "port": "COM10",
+    "configuration": "cpu=atmega2560"
+}

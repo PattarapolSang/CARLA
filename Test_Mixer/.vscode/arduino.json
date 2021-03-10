@@ -1,0 +1,5 @@
+{
+    "board": "lambda:avr:lambda",
+    "port": "COM10",
+    "sketch": "Test_Mixer.ino"
+}
