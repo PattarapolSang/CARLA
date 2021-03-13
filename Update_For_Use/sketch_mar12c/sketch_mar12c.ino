@@ -49,26 +49,29 @@ float   Current_B;              // Read Current of Motor B
 unsigned long   ctTime;  
 unsigned long   cloopTime;
 
+unsigned long   LCDTime;
+unsigned long   LCDloopTime;
+
 void Update_LCD_Monitor(){
     lcd.clear();
 
     /* Flow Screne */ 
+    //lcd.setCursor(0,0);
+    //lcd.print("Flow A   |Flow B");
     lcd.setCursor(0,0);
-    lcd.print("Flow A   |Flow B");
-    lcd.setCursor(0,1);
     lcd.print(Flow_Rate_A);
     lcd.print(" L/m");
-    lcd.setCursor(10,1);
+    lcd.setCursor(8,0);
     lcd.print(Flow_Rate_B);
     lcd.print(" L/m");
 
     /* Current Screne */ 
-    lcd.setCursor(0,2);
-    lcd.print("Current A|Current B");
-    lcd.setCursor(0,3);
+    //lcd.setCursor(0,2);
+    //lcd.print("Current A|Current B");
+    lcd.setCursor(0,1);
     lcd.print(Current_A);
     lcd.print(" A");
-    lcd.setCursor(10,3);
+    lcd.setCursor(8,1);
     lcd.print(Current_B);
     lcd.print(" A");
 }
@@ -134,7 +137,7 @@ void Update_Flow_B(){
 void Update_Current_A(){
     Current_A_RAW   = analogRead(CURRENT_A_PIN);
     Current_A_Flt.add(Current_A_RAW);
-    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.47;
+    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.57;
 
     Serial.print("Current Sense_A : ");
     Serial.print(Current_A, DEC);
@@ -147,7 +150,7 @@ void Update_Current_A(){
 void Update_Current_B(){
     Current_B_RAW   = analogRead(CURRENT_B_PIN);
     Current_B_Flt.add(Current_B_RAW);
-    Current_B       = (Current_B_Flt.get() * 0.028) - 14.353;
+    Current_B       = (Current_B_Flt.get() * 0.028) - 13.653;
 
     Serial.print("Current Sense_B : ");
     Serial.print(Current_B, DEC);
