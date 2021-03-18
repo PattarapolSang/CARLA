@@ -106,7 +106,7 @@ void RPM_B(){
 } 
 
 void Update_Flow_A(){
-    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.672) - 5.104);
+    Flow_Rate_A     = ((float(Pulse_Flow_A) * 30.8) + 106.0);
 
     Serial.print("Water Sensor_A : ");
     Serial.print(Flow_Rate_A, DEC);
@@ -119,7 +119,7 @@ void Update_Flow_A(){
 }
 
 void Update_Flow_B(){
-    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.235) - 2.7);
+    Flow_Rate_B     = ((float(Pulse_Flow_B) * 30.8) + 136.8);
 
     Serial.print("Water Sensor_B : ");
     Serial.print(Flow_Rate_B, DEC);
@@ -134,7 +134,7 @@ void Update_Flow_B(){
 void Update_Current_A(){
     Current_A_RAW   = analogRead(CURRENT_A_PIN);
     Current_A_Flt.add(Current_A_RAW);
-    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.46;
+    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.49;
 
     Serial.print("Current Sense_A : ");
     Serial.print(Current_A, DEC);
@@ -147,7 +147,7 @@ void Update_Current_A(){
 void Update_Current_B(){
     Current_B_RAW   = analogRead(CURRENT_B_PIN);
     Current_B_Flt.add(Current_B_RAW);
-    Current_B       = (Current_B_Flt.get() * 0.028) - 14.31;
+    Current_B       = (Current_B_Flt.get() * 0.028) - 14.35;
 
     Serial.print("Current Sense_B : ");
     Serial.print(Current_B, DEC);

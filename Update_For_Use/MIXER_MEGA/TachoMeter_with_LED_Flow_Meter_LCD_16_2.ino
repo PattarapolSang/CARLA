@@ -17,7 +17,7 @@ MovingAverageFloat <16> Current_B_Flt;
 #define CURRENT_A_PIN   A0
 #define CURRENT_B_PIN   A1
 
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 20 chars and 4 line display
 
 /* Frequency Read for Brushless Motor */
 int     Htime_A;            // integer for storing high time
@@ -109,7 +109,7 @@ void RPM_B(){
 } 
 
 void Update_Flow_A(){
-    Flow_Rate_A     = (float(Pulse_Flow_A) * 30.8);
+    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.138) + 12.29);
 
     Serial.print("Water Sensor_A : ");
     Serial.print(Flow_Rate_A, DEC);
@@ -122,7 +122,7 @@ void Update_Flow_A(){
 }
 
 void Update_Flow_B(){
-    Flow_Rate_B     = (float(Pulse_Flow_B) * 30.8);
+    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.733) - 12.425);
 
     Serial.print("Water Sensor_B : ");
     Serial.print(Flow_Rate_B, DEC);
@@ -137,7 +137,7 @@ void Update_Flow_B(){
 void Update_Current_A(){
     Current_A_RAW   = analogRead(CURRENT_A_PIN);
     Current_A_Flt.add(Current_A_RAW);
-    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.87;
+    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.57;
 
     Serial.print("Current Sense_A : ");
     Serial.print(Current_A, DEC);
@@ -150,7 +150,7 @@ void Update_Current_A(){
 void Update_Current_B(){
     Current_B_RAW   = analogRead(CURRENT_B_PIN);
     Current_B_Flt.add(Current_B_RAW);
-    Current_B       = (Current_B_Flt.get() * 0.028) - 14.353;
+    Current_B       = (Current_B_Flt.get() * 0.028) - 13.753;
 
     Serial.print("Current Sense_B : ");
     Serial.print(Current_B, DEC);
