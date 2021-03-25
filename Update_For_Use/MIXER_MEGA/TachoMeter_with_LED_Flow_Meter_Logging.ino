@@ -3,7 +3,7 @@
 
 #include <SPI.h>
 #include <SD.h>
-File MyFile;                // Create new file
+File myFile;                // Create new file
 
 #include "MovingAverageFloat.h"
 MovingAverageFloat <16> Freq_A_Flt;
@@ -20,8 +20,6 @@ MovingAverageFloat <16> Current_B_Flt;
 
 #define CURRENT_A_PIN   A0
 #define CURRENT_B_PIN   A1
-
-#define CHIP_SELECT     4
 
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
 
@@ -65,21 +63,20 @@ bool    Current_Tune_Sts    = true;
 unsigned long   ctTime;         // Counting time
 unsigned long   cloopTime;      // Loop time
 unsigned long   ctunningTime;   // Tuning time
-unsigned long   cloopTime_Log   // Loop time for logging
+unsigned long   cloopTime_Log;  // Loop time for logging
 
 /* SD card configuration */
 String      File_Name           = "Log_";
 int         File_Name_Count     = 0;
 bool        Search_Sts          = 1;
-
-
+const int   chipSelect          = 4;
 
 void Update_LCD_Monitor(){
     lcd.clear();
 
     /* Flow Screne */ 
-    lcd.setCursor(0,0);
-    lcd.print("Flow A   |Flow B");
+    //lcd.setCursor(0,0);
+    //lcd.print("Flow A   |Flow B");
     lcd.setCursor(0,1);
     lcd.print(Flow_Rate_A);
     lcd.print(" L/m");
@@ -88,8 +85,8 @@ void Update_LCD_Monitor(){
     lcd.print(" L/m");
 
     /* Current Screne */ 
-    lcd.setCursor(0,2);
-    lcd.print("Current A|Current B");
+    //lcd.setCursor(0,2);
+    //lcd.print("Current A|Current B");
     lcd.setCursor(0,3);
     lcd.print(Current_A);
     lcd.print(" A");
@@ -118,6 +115,147 @@ void Frequency_B_update(){
     frequency_B_Flt = Freq_B_Flt.get();
 }
 
+void Update_Flow_A(){
+    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.672) - 5.104);
+
+    /*Serial.print("Water Sensor_A : ");
+    Serial.print(Flow_Rate_A, DEC);
+    Serial.print(" L/Min       ");
+
+    Serial.print("Pulse Counter : ");
+    Serial.println(Pulse_Flow_A);*/
+
+    Pulse_Flow_A    = 0;  
+}
+
+void Update_Flow_B(){
+    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.235) - 2.7);
+
+    /*Serial.print("Water Sensor_B : ");
+    Serial.print(Flow_Rate_B, DEC);
+    Serial.print(" L/Min       ");
+
+    Serial.print("Pulse Counter : ");
+    Serial.println(Pulse_Flow_B);*/ 
+
+    Pulse_Flow_B    = 0;
+}
+
+void Update_Current_A(){
+    Current_A_RAW   = analogRead(CURRENT_A_PIN);
+    Current_A_Flt.add(Current_A_RAW);
+    Current_A       = (Current_A_Flt.get() * 0.027) - 13.62 + Offset_Current_A;
+
+    /*Serial.print("Current Sense_A : ");
+    Serial.print(Current_A, DEC);
+    Serial.print(" A       ");
+
+    Serial.print("RAW Data A : ");
+    Serial.println(Current_A_RAW);*/
+}
+
+void Update_Current_B(){
+    Current_B_RAW   = analogRead(CURRENT_B_PIN);
+    Current_B_Flt.add(Current_B_RAW);
+    Current_B       = (Current_B_Flt.get() * 0.027) - 14.34 + Offset_Current_B;
+
+    /*Serial.print("Current Sense_B : ");
+    Serial.print(Current_B, DEC);
+    Serial.print(" A       ");
+
+    Serial.print("RAW Data B : ");
+    Serial.println(Current_B_RAW);*/
+}
+
+void Logging_Initialize(){
+    
+    /*Serial.print("Initializing SD card...");*/
+    pinMode(SS, OUTPUT);
+
+    if (!SD.begin(chipSelect)) {
+        /*Serial.println("initialization failed!");*/
+        return;
+    }
+    /*Serial.println("initialization done.");*/
+
+    while (Search_Sts){
+        
+        /*Serial.print("We are checking file : ");
+        Serial.println(File_Name_Count);*/
+        File_Name   = "Log_";
+        File_Name.concat(File_Name_Count);
+        File_Name.concat(".txt");
+
+        /*Serial.print("This is file name:  ");
+        Serial.println(File_Name);*/
+        myFile      = SD.open(File_Name, FILE_READ);
+        
+        if(myFile){
+            /*Serial.print("Already have : ");
+            Serial.println(File_Name_Count);
+            Serial.print("File name  : ");
+            Serial.println(File_Name); */ 
+
+            File_Name_Count++;
+            myFile.close(); 
+        }
+        else{
+            /*Serial.print("Finish at : ");
+            Serial.println(File_Name_Count);
+            Serial.print("File name  : ");
+            Serial.println(File_Name);*/
+
+            myFile.close(); 
+            Search_Sts  =   false;
+        }
+        //Search_Sts = false;
+    }    
+    /*Serial.print("This is file name after searching:  ");
+    Serial.println(File_Name);*/  
+
+    myFile = SD.open(File_Name, FILE_WRITE);               // เปิดไฟล์ที่ชื่อ test.txt เพื่อเขียนข้อมูล โหมด FILE_WRITE
+    /*Serial.print("We write on file name   : ");*/
+
+
+    Serial.println(File_Name);
+    // ถ้าเปิดไฟล์สำเร็จ ให้เขียนข้อมูลเพิ่มลงไป
+    if (myFile) {
+        /*Serial.print("Writing to test.txt...");*/
+        myFile.println("Board initialized Ready to write Data to Board");
+        myFile.println("Flow_A,Current_A,Flow_B,Current_B");
+        myFile.close();                                     // ปิดไฟล์
+        /*Serial.println("done.");*/
+    } else {       
+        //Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error*/ 
+    }
+
+}
+
+void Logging_Write(){
+
+    myFile = SD.open(File_Name, FILE_WRITE);               // เปิดไฟล์ที่ชื่อ test.txt เพื่อเขียนข้อมูล โหมด FILE_WRITE
+    /*Serial.print("We write on file name   : ");
+    Serial.println(File_Name);*/
+
+    if (myFile) {
+
+        myFile.print(Flow_Rate_A);
+        myFile.print(",");
+        myFile.print(Current_A);
+        myFile.print(",");
+        myFile.print(Flow_Rate_B);
+        myFile.print(",");
+        myFile.println(Current_B);
+
+        myFile.close();                                     // ปิดไฟล์
+        /*Serial.println("done.");*/
+
+    } else {       
+        //Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error */
+    } 
+
+}
+
 void RPM_A(){ 
     /* This is the function that the interupt calls */ 
     /* This function measures the rising and falling edge of the hall effect sensors signal */
@@ -128,74 +266,22 @@ void RPM_B(){
     /* This is the function that the interupt calls */ 
     /* This function measures the rising and falling edge of the hall effect sensors signal */
     Pulse_Flow_B++;                    
-} 
-
-void Update_Flow_A(){
-    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.672) - 5.104);
-
-    Serial.print("Water Sensor_A : ");
-    Serial.print(Flow_Rate_A, DEC);
-    Serial.print(" L/Min       ");
-
-    Serial.print("Pulse Counter : ");
-    Serial.println(Pulse_Flow_A);
-
-    Pulse_Flow_A    = 0;  
-}
-
-void Update_Flow_B(){
-    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.235) - 2.7);
-
-    Serial.print("Water Sensor_B : ");
-    Serial.print(Flow_Rate_B, DEC);
-    Serial.print(" L/Min       ");
-
-    Serial.print("Pulse Counter : ");
-    Serial.println(Pulse_Flow_B); 
-
-    Pulse_Flow_B    = 0;
-}
-
-void Update_Current_A(){
-    Current_A_RAW   = analogRead(CURRENT_A_PIN);
-    Current_A_Flt.add(Current_A_RAW);
-    Current_A       = (Current_A_Flt.get() * 0.027) - 13.62 + Offset_Current_A;
-
-    Serial.print("Current Sense_A : ");
-    Serial.print(Current_A, DEC);
-    Serial.print(" A       ");
-
-    Serial.print("RAW Data A : ");
-    Serial.println(Current_A_RAW);
-}
-
-void Update_Current_B(){
-    Current_B_RAW   = analogRead(CURRENT_B_PIN);
-    Current_B_Flt.add(Current_B_RAW);
-    Current_B       = (Current_B_Flt.get() * 0.027) - 14.34 + Offset_Current_B;
-
-    Serial.print("Current Sense_B : ");
-    Serial.print(Current_B, DEC);
-    Serial.print(" A       ");
-
-    Serial.print("RAW Data B : ");
-    Serial.println(Current_B_RAW);
 }
 
 void AutoTune_Current(){
 
     while(Current_Tune_Sts){
         
-        Serial.println("...............Start tunning.......................");
+        /*Serial.println("...............Start tunning.......................");*/
         
         ctTime = millis();
-
-        Serial.print("ctTime :");
+        
+        /*Serial.print("ctTime :");
         Serial.println(ctTime);
         Serial.print("cloopTime :");
         Serial.println(cloopTime);
         Serial.print("ctunningTime :");
-        Serial.println(ctunningTime);
+        Serial.println(ctunningTime);*/
 
         if(ctTime >= (ctunningTime + 17000)){
             
@@ -203,7 +289,7 @@ void AutoTune_Current(){
             Offset_A = Current_A * (-1);
             Offset_B = Current_B * (-1);
 
-            Serial.println("................Finish Tunning....................");
+            /*Serial.println("................Finish Tunning....................");
             Serial.print("Offset A : ");
             Serial.print(Offset_A);
             Serial.print("  Current A : ");
@@ -213,7 +299,7 @@ void AutoTune_Current(){
             Serial.print("  Current A : ");
             Serial.println(Current_B);
 
-            Serial.println("....................................................");
+            Serial.println("....................................................");*/
 
             Current_Tune_Sts  = false;                        // Finish Status
         }
@@ -223,8 +309,9 @@ void AutoTune_Current(){
             cloopTime   = ctTime;                               // Update Time
             
             Update_Current_A();
+            Update_Current_B();
 
-            Serial.println(".............Updated Current................");
+            /*Serial.println(".............Updated Current................");*/
         }
 
     }
@@ -232,100 +319,6 @@ void AutoTune_Current(){
     /* Assign new offset to current formula */   
     Offset_Current_A    = Offset_A;
     Offset_Current_B    = Offset_B;
-
-}
-
-void Scan_File_Name(){
-    while (Search_Sts){
-        
-        Serial.print("We are checking file : ");
-        Serial.println(File_Name_Count);
-        File_Name   = "Log_";
-        File_Name.concat(File_Name_Count);
-        File_Name.concat(".txt");
-
-        Serial.print("This is file name:  ");
-        Serial.println(File_Name);
-        MyFile      = SD.open(File_Name, FILE_READ);
-        
-        if(MyFile){
-            Serial.print("Already have : ");
-            Serial.println(File_Name_Count);
-            Serial.print("File name  : ");
-            Serial.println(File_Name);  
-
-            File_Name_Count++;
-            MyFile.close(); 
-        }
-        else{
-            Serial.print("Finish at : ");
-            Serial.println(File_Name_Count);
-            Serial.print("File name  : ");
-            Serial.println(File_Name);
-
-            MyFile.close(); 
-            Search_Sts  =   false;
-        }
-        //Search_Sts = false;
-    }
-}
-
-void Logging_Initialize(){
-    
-    Serial.print("Initializing SD card...");
-    pinMode(SS, OUTPUT);
-
-    if (!SD.begin(CHIP_SELECT)) {
-        Serial.println("initialization failed!");
-        return;
-    }
-    Serial.println("initialization done.");
-
-    Scan_File_Name();
-    
-    Serial.print("This is file name after searching:  ");
-    Serial.println(File_Name);  
-
-    MyFile = SD.open(File_Name, FILE_WRITE);               // เปิดไฟล์ที่ชื่อ test.txt เพื่อเขียนข้อมูล โหมด FILE_WRITE
-    Serial.print("We write on file name   : ");
-
-
-    Serial.println(File_Name);
-    // ถ้าเปิดไฟล์สำเร็จ ให้เขียนข้อมูลเพิ่มลงไป
-    if (MyFile) {
-        Serial.print("Writing to test.txt...");
-        MyFile.println("Board initialized Ready to write Data to Board");
-        MyFile.println("Flow_A,Current_A,Flow_B,Current_B");
-        MyFile.close();                                     // ปิดไฟล์
-        Serial.println("done.");
-    } else {       
-        Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error 
-    }
-
-}
-
-void Logging_Write(){
-
-    MyFile = SD.open(File_Name, FILE_WRITE);               // เปิดไฟล์ที่ชื่อ test.txt เพื่อเขียนข้อมูล โหมด FILE_WRITE
-    Serial.print("We write on file name   : ");
-    Serial.println(File_Name);
-
-    if (MyFile) {
-
-        MyFile.print(Flow_Rate_A);
-        MyFile.print(",");
-        MyFile.print(Current_A);
-        MyFile.print(",");
-        MyFile.print(Flow_Rate_B);
-        MyFile.print(",");
-        MyFile.println(Current_B);
-
-        MyFile.close();                                     // ปิดไฟล์
-        Serial.println("done.");
-
-    } else {       
-        Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error 
-    } 
 
 }
 
@@ -344,7 +337,7 @@ void setup()
     /* Attrach interupt */
     attachInterrupt(digitalPinToInterrupt(FLOW_A_PIN), RPM_A, RISING);
     attachInterrupt(digitalPinToInterrupt(FLOW_B_PIN), RPM_B, RISING);
-    
+
     /* initialize the lcd */ 
     lcd.init();                      
     lcd.init();
@@ -364,11 +357,15 @@ void setup()
 
     /* Start Interupt */
     sei();
-
+    
     /* Start Timer */
     ctTime              = millis();         // Update Running timer
     cloopTime           = ctTime;           // For 1 sec loop current
     ctunningTime        = ctTime;           // For first 16 sec tunning time     
+
+    lcd.clear();
+    lcd.setCursor(0,1);
+    lcd.print("..Tunning Current..");
 
     /* Start Tunning Current */
     AutoTune_Current();
@@ -380,7 +377,7 @@ void setup()
     ctTime              = millis();         // Update Running timer
     cloopTime           = ctTime;           // For 1 sec loop current    
 
-    Serial.print("!!!!!!! Done Initialized !!!!!");
+    /*Serial.print("!!!!!!! Done Initialized !!!!!");*/
 }
 
 void loop() {
@@ -391,13 +388,13 @@ void loop() {
     if(ctTime >= (cloopTime + 1000)){
         cloopTime   = ctTime;                             // Update Time
         
-        Update_LCD_Monitor();
-        Update_Flow_A();
-        Update_Flow_B();  
         Update_Current_A();
         Update_Current_B();
+        Update_Flow_A();
+        Update_Flow_B();
+        Update_LCD_Monitor(); 
 
-        Serial.println();
+        /*Serial.println();*/
 
     }
 
@@ -405,8 +402,9 @@ void loop() {
         cloopTime_Log   = ctTime;                             // Update Time
         
         Logging_Write();
+        //Update_LCD_Monitor();
 
-        Serial.println();
+        /*Serial.println("Write logging!!!");*/
 
     }
     //Dif_AB          =   Flow_Rate_A - Flow_Rate_B;

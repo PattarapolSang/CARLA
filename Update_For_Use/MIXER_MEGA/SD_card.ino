@@ -7,21 +7,14 @@ const int   chipSelect          = 4;
 int         File_Name_Count     = 0;
 String      File_Name           = "Log_";
 
-bool         Search_Sts          = 1;
+bool        Search_Sts          = 1;
 
-void setup()
-{
-    Serial.begin(9600);
+float       Flow_A              = 1.0;
+float       Current_A           = 1.1;
+float       Flow_B              = 2.0;
+float       Current_B           = 2.2;
 
-    Serial.print("Initializing SD card...");
-    pinMode(SS, OUTPUT);
-
-    if (!SD.begin(chipSelect)) {
-        Serial.println("initialization failed!");
-        return;
-    }
-    Serial.println("initialization done.");
-
+void Scan_File_Name(){
     while (Search_Sts){
         
         Serial.print("We are checking file : ");
@@ -55,8 +48,23 @@ void setup()
         //Search_Sts = false;
     
     }
-    
+}
 
+void setup()
+{
+    Serial.begin(9600);
+
+    Serial.print("Initializing SD card...");
+    pinMode(SS, OUTPUT);
+
+    if (!SD.begin(chipSelect)) {
+        Serial.println("initialization failed!");
+        return;
+    }
+    Serial.println("initialization done.");
+
+    Scan_File_Name();
+    
     Serial.print("This is file name after searching:  ");
     Serial.println(File_Name);  
 
@@ -68,7 +76,9 @@ void setup()
     // ถ้าเปิดไฟล์สำเร็จ ให้เขียนข้อมูลเพิ่มลงไป
     if (myFile) {
         Serial.print("Writing to test.txt...");
-        myFile.println("Board initialized");                // สั่งให้เขียนข้อมูล
+        myFile.println("Board initialized Ready to write Data to Board");
+        myFile.println("Flow_A,Current_A,Flow_B,Current_B");
+        myFile.println("");                // สั่งให้เขียนข้อมูล
         myFile.close();                                     // ปิดไฟล์
         Serial.println("done.");
     } else {       
@@ -80,8 +90,26 @@ void setup()
 void loop(){
     Serial.println("We are in the main loop");
     Serial.println(".............................");
-    while (true){
-        ;
-    }
     
+    myFile = SD.open(File_Name, FILE_WRITE);               // เปิดไฟล์ที่ชื่อ test.txt เพื่อเขียนข้อมูล โหมด FILE_WRITE
+    Serial.print("We write on file name   : ");
+    Serial.println(File_Name);
+
+    if (myFile) {
+
+        myFile.print(Flow_A);
+        myFile.print(",");
+        myFile.print(Current_A);
+        myFile.print(",");
+        myFile.print(Flow_B);
+        myFile.print(",");
+        myFile.println(Current_B);
+
+        myFile.close();                                     // ปิดไฟล์
+        Serial.println("done.");
+
+    } else {       
+        Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error 
+    }    
+
 }
