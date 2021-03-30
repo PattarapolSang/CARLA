@@ -21,9 +21,7 @@ MovingAverageFloat <16> Current_B_Flt;
 #define CURRENT_A_PIN   A0
 #define CURRENT_B_PIN   A1
 
-#define PWM_PIN         10
-
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 20 chars and 4 line display
 
 /* Frequency Read for Brushless Motor */
 int     Htime_A;            // integer for storing high time
@@ -74,25 +72,25 @@ bool        Search_Sts          = 1;
 const int   chipSelect          = 4;
 
 void Update_LCD_Monitor(){
-    //lcd.clear();
+    lcd.clear();
 
     /* Flow Screne */ 
     //lcd.setCursor(0,0);
     //lcd.print("Flow A   |Flow B");
-    lcd.setCursor(0,1);
+    lcd.setCursor(0,0);
     lcd.print(Flow_Rate_A);
     lcd.print(" L/m");
-    lcd.setCursor(10,1);
+    lcd.setCursor(8,0);
     lcd.print(Flow_Rate_B);
     lcd.print(" L/m");
 
     /* Current Screne */ 
     //lcd.setCursor(0,2);
     //lcd.print("Current A|Current B");
-    lcd.setCursor(0,3);
+    lcd.setCursor(0,1);
     lcd.print(Current_A);
     lcd.print(" A");
-    lcd.setCursor(10,3);
+    lcd.setCursor(8,1);
     lcd.print(Current_B);
     lcd.print(" A");
 }
@@ -117,8 +115,20 @@ void Frequency_B_update(){
     frequency_B_Flt = Freq_B_Flt.get();
 }
 
+void RPM_A(){ 
+    /* This is the function that the interupt calls */ 
+    /* This function measures the rising and falling edge of the hall effect sensors signal */
+    Pulse_Flow_A++;                    
+} 
+
+void RPM_B(){ 
+    /* This is the function that the interupt calls */ 
+    /* This function measures the rising and falling edge of the hall effect sensors signal */
+    Pulse_Flow_B++;                    
+} 
+
 void Update_Flow_A(){
-    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.672) - 5.104);
+    Flow_Rate_A     = ((float(Pulse_Flow_A) * 33.138) + 12.29);
 
     /*Serial.print("Water Sensor_A : ");
     Serial.print(Flow_Rate_A, DEC);
@@ -131,7 +141,7 @@ void Update_Flow_A(){
 }
 
 void Update_Flow_B(){
-    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.235) - 2.7);
+    Flow_Rate_B     = ((float(Pulse_Flow_B) * 35.733) - 12.425);
 
     /*Serial.print("Water Sensor_B : ");
     Serial.print(Flow_Rate_B, DEC);
@@ -146,7 +156,7 @@ void Update_Flow_B(){
 void Update_Current_A(){
     Current_A_RAW   = analogRead(CURRENT_A_PIN);
     Current_A_Flt.add(Current_A_RAW);
-    Current_A       = (Current_A_Flt.get() * 0.027) - 13.62 + Offset_Current_A;
+    Current_A       = (Current_A_Flt.get() * 0.0269) - 13.57;
 
     /*Serial.print("Current Sense_A : ");
     Serial.print(Current_A, DEC);
@@ -159,7 +169,7 @@ void Update_Current_A(){
 void Update_Current_B(){
     Current_B_RAW   = analogRead(CURRENT_B_PIN);
     Current_B_Flt.add(Current_B_RAW);
-    Current_B       = (Current_B_Flt.get() * 0.027) - 14.34 + Offset_Current_B;
+    Current_B       = (Current_B_Flt.get() * 0.028) - 13.753;
 
     /*Serial.print("Current Sense_B : ");
     Serial.print(Current_B, DEC);
@@ -251,27 +261,11 @@ void Logging_Write(){
 
         myFile.close();                                     // ปิดไฟล์
         /*Serial.println("done.");*/
-        lcd.setCursor(0,0);
-        lcd.print("Logging ");
-        lcd.print(File_Name);  
+
     } else {       
         //Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error */
-        lcd.setCursor(0,0);
-        lcd.print("Cannot Logging..");
     } 
 
-}
-
-void RPM_A(){ 
-    /* This is the function that the interupt calls */ 
-    /* This function measures the rising and falling edge of the hall effect sensors signal */
-    Pulse_Flow_A++;                    
-} 
-
-void RPM_B(){ 
-    /* This is the function that the interupt calls */ 
-    /* This function measures the rising and falling edge of the hall effect sensors signal */
-    Pulse_Flow_B++;                    
 }
 
 void AutoTune_Current(){
@@ -289,7 +283,7 @@ void AutoTune_Current(){
         Serial.print("ctunningTime :");
         Serial.println(ctunningTime);*/
 
-        if(ctTime >= (ctunningTime + 20000)){
+        if(ctTime >= (ctunningTime + 17000)){
             
             /* Getting error value */
             Offset_A = Current_A * (-1);
@@ -343,11 +337,7 @@ void setup()
     /* Attrach interupt */
     attachInterrupt(digitalPinToInterrupt(FLOW_A_PIN), RPM_A, RISING);
     attachInterrupt(digitalPinToInterrupt(FLOW_B_PIN), RPM_B, RISING);
-
-    /* PWM for supply tunning */
-    pinMode(PWM_PIN, OUTPUT);
-    analogWrite(PWM_PIN, 0);
-
+    
     /* initialize the lcd */ 
     lcd.init();                      
     lcd.init();
@@ -367,7 +357,7 @@ void setup()
 
     /* Start Interupt */
     sei();
-    
+
     /* Start Timer */
     ctTime              = millis();         // Update Running timer
     cloopTime           = ctTime;           // For 1 sec loop current
@@ -394,20 +384,17 @@ void loop() {
     /* Update current timming */
     ctTime = millis();
 
-    /* PWM supply at 16 volt */
-    analogWrite(PWM_PIN, 130);
-
     /* Task 1000 ms */
     if(ctTime >= (cloopTime + 1000)){
         cloopTime   = ctTime;                             // Update Time
         
+        Update_LCD_Monitor();
+        Update_Flow_A();
+        Update_Flow_B();  
         Update_Current_A();
         Update_Current_B();
-        Update_Flow_A();
-        Update_Flow_B();
-        Update_LCD_Monitor(); 
 
-        /*Serial.println();*/
+        //Serial.println();
 
     }
 
@@ -420,6 +407,6 @@ void loop() {
         /*Serial.println("Write logging!!!");*/
 
     }
-    //Dif_AB          =   Flow_Rate_A - Flow_Rate_B;
+        //Dif_AB          =   Flow_Rate_A - Flow_Rate_B;
 
 } 

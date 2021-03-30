@@ -21,8 +21,6 @@ MovingAverageFloat <16> Current_B_Flt;
 #define CURRENT_A_PIN   A0
 #define CURRENT_B_PIN   A1
 
-#define PWM_PIN         10
-
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
 
 /* Frequency Read for Brushless Motor */
@@ -251,13 +249,9 @@ void Logging_Write(){
 
         myFile.close();                                     // ปิดไฟล์
         /*Serial.println("done.");*/
-        lcd.setCursor(0,0);
-        lcd.print("Logging ");
-        lcd.print(File_Name);  
+
     } else {       
         //Serial.println("error opening test.txt");           // ถ้าเปิดไฟลืไม่สำเร็จ ให้แสดง error */
-        lcd.setCursor(0,0);
-        lcd.print("Cannot Logging..");
     } 
 
 }
@@ -289,7 +283,7 @@ void AutoTune_Current(){
         Serial.print("ctunningTime :");
         Serial.println(ctunningTime);*/
 
-        if(ctTime >= (ctunningTime + 20000)){
+        if(ctTime >= (ctunningTime + 17000)){
             
             /* Getting error value */
             Offset_A = Current_A * (-1);
@@ -344,10 +338,6 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(FLOW_A_PIN), RPM_A, RISING);
     attachInterrupt(digitalPinToInterrupt(FLOW_B_PIN), RPM_B, RISING);
 
-    /* PWM for supply tunning */
-    pinMode(PWM_PIN, OUTPUT);
-    analogWrite(PWM_PIN, 0);
-
     /* initialize the lcd */ 
     lcd.init();                      
     lcd.init();
@@ -393,9 +383,6 @@ void setup()
 void loop() {
     /* Update current timming */
     ctTime = millis();
-
-    /* PWM supply at 16 volt */
-    analogWrite(PWM_PIN, 130);
 
     /* Task 1000 ms */
     if(ctTime >= (cloopTime + 1000)){

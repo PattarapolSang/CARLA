@@ -395,7 +395,7 @@ void loop() {
     ctTime = millis();
 
     /* PWM supply at 16 volt */
-    analogWrite(PWM_PIN, 130);
+    analogWrite(PWM_PIN, 165);
 
     /* Task 1000 ms */
     if(ctTime >= (cloopTime + 1000)){
